@@ -1,140 +1,137 @@
 #include <iostream>
 using namespace std;
 
-const int ORDER = 3;
+const int TREE_ORDER = 3; 
 
-class BTreeNode {
-public:
-    int keys[ORDER - 1];
-    BTreeNode* children[ORDER];
-    int n; 
-    bool leaf;
+struct BTreeNode {
+    int *keys;              
+    BTreeNode **children;   
+    bool isLeaf;           
+    int numKeys;           
+} *root = NULL, *newNode = NULL, *currentNode = NULL;
 
-    BTreeNode(bool isLeaf = true) : n(0), leaf(isLeaf) {
-        for (int i = 0; i < ORDER; i++)
-            children[i] = nullptr;
+BTreeNode* initializeNode() {
+    int i;
+    newNode = new BTreeNode;
+    newNode->keys = new int[TREE_ORDER];
+    newNode->children = new BTreeNode *[TREE_ORDER + 1];
+    newNode->isLeaf = true;
+    newNode->numKeys = 0;
+    for (i = 0; i <= TREE_ORDER; i++) {
+        newNode->children[i] = NULL;
     }
-};
+    return newNode;
+}
 
-class BTree {
-private:
-    BTreeNode* root;
-
-    void splitChild(BTreeNode* parent, int index) {
-        BTreeNode* child = parent->children[index];
-        BTreeNode* newNode = new BTreeNode(child->leaf);
-        newNode->n = ORDER / 2 - 1;
-
-        for (int j = 0; j < ORDER / 2 - 1; j++)
-            newNode->keys[j] = child->keys[j + ORDER / 2];
-
-        if (!child->leaf) {
-            for (int j = 0; j < ORDER / 2; j++)
-                newNode->children[j] = child->children[j + ORDER / 2];
+void traverseTree(BTreeNode *node) {
+    cout << endl;
+    int i;
+    for (i = 0; i < node->numKeys; i++) {
+        if (!node->isLeaf) {
+            traverseTree(node->children[i]);
         }
-
-        child->n = ORDER / 2 - 1;
-
-        for (int j = parent->n; j >= index + 1; j--)
-            parent->children[j + 1] = parent->children[j];
-        parent->children[index + 1] = newNode;
-
-        for (int j = parent->n - 1; j >= index; j--)
-            parent->keys[j + 1] = parent->keys[j];
-        parent->keys[index] = child->keys[ORDER / 2 - 1];
-        parent->n++;
+        cout << " " << node->keys[i];
     }
+    if (!node->isLeaf) {
+        traverseTree(node->children[i]);
+    }
+    cout << endl;
+}
 
-    void insertNonFull(BTreeNode* node, int key) {
-        int i = node->n - 1;
-
-        if (node->leaf) {
-            while (i >= 0 && key < node->keys[i]) {
-                node->keys[i + 1] = node->keys[i];
-                i--;
+void sortKeys(int *keysArray, int numKeys) {
+    int i, j, temp;
+    for (i = 0; i < numKeys; i++) {
+        for (j = i + 1; j < numKeys; j++) {
+            if (keysArray[i] > keysArray[j]) {
+                temp = keysArray[i];
+                keysArray[i] = keysArray[j];
+                keysArray[j] = temp;
             }
-            node->keys[i + 1] = key;
-            node->n++;
-        } else {
-            while (i >= 0 && key < node->keys[i])
-                i--;
-            i++;
+        }
+    }
+}
 
-            if (node->children[i]->n == ORDER - 1) {
-                splitChild(node, i);
-                if (key > node->keys[i])
-                    i++;
-            }
-            insertNonFull(node->children[i], key);
+int splitChild(BTreeNode *parent, int childIndex) {
+    int midIndex = (TREE_ORDER - 1) / 2;
+    int midKey;
+    BTreeNode *newChild = initializeNode();
+    BTreeNode *child = parent->children[childIndex];
+    newChild->isLeaf = child->isLeaf;
+
+    midKey = child->keys[midIndex];
+    newChild->numKeys = TREE_ORDER - 1 - midIndex - 1;
+
+    for (int j = 0; j < newChild->numKeys; j++) {
+        newChild->keys[j] = child->keys[midIndex + 1 + j];
+    }
+
+    if (!child->isLeaf) {
+        for (int j = 0; j <= newChild->numKeys; j++) {
+            newChild->children[j] = child->children[midIndex + 1 + j];
         }
     }
 
-    void traverse(BTreeNode* node) {
-        for (int i = 0; i < node->n; i++) {
-            if (!node->leaf)
-                traverse(node->children[i]);
-            cout << " " << node->keys[i];
-        }
+    child->numKeys = midIndex;
 
-        if (!node->leaf)
-            traverse(node->children[node->n]);
+    for (int j = parent->numKeys; j > childIndex; j--) {
+        parent->children[j + 1] = parent->children[j];
+        parent->keys[j] = parent->keys[j - 1];
     }
 
-    BTreeNode* search(BTreeNode* node, int key) {
-        int i = 0;
-        while (i < node->n && key > node->keys[i])
-            i++;
+    parent->children[childIndex + 1] = newChild;
+    parent->keys[childIndex] = midKey;
+    parent->numKeys++;
 
-        if (i < node->n && key == node->keys[i])
-            return node;
+    return midKey;
+}
 
-        if (node->leaf)
-            return nullptr;
-
-        return search(node->children[i], key);
-    }
-
-public:
-    BTree() { root = new BTreeNode(true); }
-
-    void insert(int key) {
-        if (root->n == ORDER - 1) {
-            BTreeNode* newRoot = new BTreeNode(false);
+void insertKey(int key) {
+    if (!root) {
+        root = initializeNode();
+        root->keys[0] = key;
+        root->numKeys = 1;
+    } else {
+        BTreeNode *current = root;
+        if (current->numKeys == TREE_ORDER - 1) {
+            BTreeNode *newRoot = initializeNode();
+            newRoot->isLeaf = false;
             newRoot->children[0] = root;
+            splitChild(newRoot, 0);
             root = newRoot;
-            splitChild(root, 0);
-            insertNonFull(root, key);
-        } else {
-            insertNonFull(root, key);
         }
-    }
 
-    void traverse() {
-        if (root)
-            traverse(root);
-    }
+        current = root;
+        while (!current->isLeaf) {
+            int i = current->numKeys - 1;
+            while (i >= 0 && key < current->keys[i]) {
+                i--;
+            }
+            i++;
+            if (current->children[i]->numKeys == TREE_ORDER - 1) {
+                splitChild(current, i);
+                if (key > current->keys[i]) {
+                    i++;
+                }
+            }
+            current = current->children[i];
+        }
 
-    BTreeNode* search(int key) {
-        return root ? search(root, key) : nullptr;
+        current->keys[current->numKeys] = key;
+        sortKeys(current->keys, current->numKeys + 1);
+        current->numKeys++;
     }
-};
+}
 
 int main() {
-    BTree tree;
-
-    tree.insert(10);
-    tree.insert(20);
-    tree.insert(5);
-    tree.insert(6);
-    tree.insert(12);
-    tree.insert(30);
-
-    cout << "Tree traversal: ";
-    tree.traverse();
-    cout << endl;
-
-    int searchKey = 6;
-    cout << searchKey << (tree.search(searchKey) ? " found" : " not found") << endl;
-
+    int n, key;
+    cout << "Enter the number of elements to be inserted: ";
+    cin >> n;
+    for (int i = 0; i < n; i++) {
+        cout << "Enter the element: ";
+        cin >> key;
+        insertKey(key);
+    }
+    cout << "Traversal of constructed B-tree:" << endl;
+    traverseTree(root);
     return 0;
 }
