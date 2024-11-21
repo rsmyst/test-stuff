@@ -17,12 +17,16 @@ public:
     int hashFunction(int key) {
         return (13 * key) % size;
     }
-
     void insert(int key) {
         int index = hashFunction(key);
+        int startIndex = index;
         while (table[index] != -1) {
             collisions++;
             index = (index + 1) % size;
+            if (index == startIndex) {
+                cout << "Hash table is full. Cannot insert key: " << key << endl;
+                return;
+            }
         }
         table[index] = key;
     }
