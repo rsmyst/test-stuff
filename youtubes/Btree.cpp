@@ -24,7 +24,10 @@ BTreeNode* initializeNode() {
 }
 
 void traverseTree(BTreeNode *node) {
-    cout << endl;
+    if (node == NULL) {
+        return;
+    }
+
     int i;
     for (i = 0; i < node->numKeys; i++) {
         if (!node->isLeaf) {
@@ -35,7 +38,6 @@ void traverseTree(BTreeNode *node) {
     if (!node->isLeaf) {
         traverseTree(node->children[i]);
     }
-    cout << endl;
 }
 
 void sortKeys(int *keysArray, int numKeys) {
