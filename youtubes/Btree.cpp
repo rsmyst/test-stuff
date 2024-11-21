@@ -1,13 +1,13 @@
 #include <iostream>
 using namespace std;
 
-const int ORDER = 3; // Define the order of the B-tree
+const int ORDER = 3;
 
 class BTreeNode {
 public:
     int keys[ORDER - 1];
     BTreeNode* children[ORDER];
-    int n;
+    int n; 
     bool leaf;
 
     BTreeNode(bool isLeaf = true) : n(0), leaf(isLeaf) {
@@ -20,132 +20,121 @@ class BTree {
 private:
     BTreeNode* root;
 
-    void splitChild(BTreeNode* x, int i) {
-        BTreeNode* y = x->children[i];
-        BTreeNode* z = new BTreeNode(y->leaf);
-        z->n = ORDER / 2 - 1;
+    void splitChild(BTreeNode* parent, int index) {
+        BTreeNode* child = parent->children[index];
+        BTreeNode* newNode = new BTreeNode(child->leaf);
+        newNode->n = ORDER / 2 - 1;
 
         for (int j = 0; j < ORDER / 2 - 1; j++)
-            z->keys[j] = y->keys[j + ORDER / 2];
+            newNode->keys[j] = child->keys[j + ORDER / 2];
 
-        if (!y->leaf) {
+        if (!child->leaf) {
             for (int j = 0; j < ORDER / 2; j++)
-                z->children[j] = y->children[j + ORDER / 2];
+                newNode->children[j] = child->children[j + ORDER / 2];
         }
 
-        y->n = ORDER / 2 - 1;
+        child->n = ORDER / 2 - 1;
 
-        for (int j = x->n; j >= i + 1; j--)
-            x->children[j + 1] = x->children[j];
+        for (int j = parent->n; j >= index + 1; j--)
+            parent->children[j + 1] = parent->children[j];
+        parent->children[index + 1] = newNode;
 
-        x->children[i + 1] = z;
-
-        for (int j = x->n - 1; j >= i; j--)
-            x->keys[j + 1] = x->keys[j];
-
-        x->keys[i] = y->keys[ORDER / 2 - 1];
-        x->n = x->n + 1;
+        for (int j = parent->n - 1; j >= index; j--)
+            parent->keys[j + 1] = parent->keys[j];
+        parent->keys[index] = child->keys[ORDER / 2 - 1];
+        parent->n++;
     }
 
-    void insertNonFull(BTreeNode* x, int k) {
-        int i = x->n - 1;
+    void insertNonFull(BTreeNode* node, int key) {
+        int i = node->n - 1;
 
-        if (x->leaf) {
-            while (i >= 0 && k < x->keys[i]) {
-                x->keys[i + 1] = x->keys[i];
+        if (node->leaf) {
+            while (i >= 0 && key < node->keys[i]) {
+                node->keys[i + 1] = node->keys[i];
                 i--;
             }
-
-            x->keys[i + 1] = k;
-            x->n = x->n + 1;
+            node->keys[i + 1] = key;
+            node->n++;
         } else {
-            while (i >= 0 && k < x->keys[i])
+            while (i >= 0 && key < node->keys[i])
                 i--;
-
             i++;
-            if (x->children[i]->n == ORDER - 1) {
-                splitChild(x, i);
 
-                if (k > x->keys[i])
+            if (node->children[i]->n == ORDER - 1) {
+                splitChild(node, i);
+                if (key > node->keys[i])
                     i++;
             }
-            insertNonFull(x->children[i], k);
+            insertNonFull(node->children[i], key);
         }
     }
 
-    void traverse(BTreeNode* x) {
-        int i;
-        for (i = 0; i < x->n; i++) {
-            if (!x->leaf)
-                traverse(x->children[i]);
-            cout << " " << x->keys[i];
+    void traverse(BTreeNode* node) {
+        for (int i = 0; i < node->n; i++) {
+            if (!node->leaf)
+                traverse(node->children[i]);
+            cout << " " << node->keys[i];
         }
 
-        if (!x->leaf)
-            traverse(x->children[i]);
+        if (!node->leaf)
+            traverse(node->children[node->n]);
     }
 
-    BTreeNode* search(BTreeNode* x, int k) {
+    BTreeNode* search(BTreeNode* node, int key) {
         int i = 0;
-        while (i < x->n && k > x->keys[i])
+        while (i < node->n && key > node->keys[i])
             i++;
 
-        if (i < x->n && k == x->keys[i])
-            return x;
+        if (i < node->n && key == node->keys[i])
+            return node;
 
-        if (x->leaf)
+        if (node->leaf)
             return nullptr;
 
-        return search(x->children[i], k);
+        return search(node->children[i], key);
     }
 
 public:
     BTree() { root = new BTreeNode(true); }
 
-    void insert(int k) {
+    void insert(int key) {
         if (root->n == ORDER - 1) {
-            BTreeNode* s = new BTreeNode(false);
-            s->children[0] = root;
-            root = s;
-            splitChild(s, 0);
-            insertNonFull(s, k);
-        } else
-            insertNonFull(root, k);
+            BTreeNode* newRoot = new BTreeNode(false);
+            newRoot->children[0] = root;
+            root = newRoot;
+            splitChild(root, 0);
+            insertNonFull(root, key);
+        } else {
+            insertNonFull(root, key);
+        }
     }
 
     void traverse() {
-        if (root != nullptr)
+        if (root)
             traverse(root);
     }
 
-    BTreeNode* search(int k) {
-        return (root == nullptr) ? nullptr : search(root, k);
+    BTreeNode* search(int key) {
+        return root ? search(root, key) : nullptr;
     }
 };
 
 int main() {
-    BTree t;
+    BTree tree;
 
-    t.insert(10);
-    t.insert(20);
-    t.insert(5);
-    t.insert(6);
-    t.insert(12);
-    t.insert(30);
-    t.insert(7);
-    t.insert(17);
+    tree.insert(10);
+    tree.insert(20);
+    tree.insert(5);
+    tree.insert(6);
+    tree.insert(12);
+    tree.insert(30);
 
-    cout << "Traversal of the constructed tree is: ";
-    t.traverse();
+    cout << "Tree traversal: ";
+    tree.traverse();
     cout << endl;
 
-    int k = 5;
-    (t.search(k) != nullptr) ? cout << k << " is found" << endl
-                             : cout << k << " is not found" << endl;
-
-    k = 15;
-    (t.search(k) != nullptr) ? cout << k << " is found" << endl
-                             : cout << k << " is not found" << endl;
+    int searchKey = 6;
+    cout << searchKey << (tree.search(searchKey) ? " found" : " not found") << endl;
 
     return 0;
 }
