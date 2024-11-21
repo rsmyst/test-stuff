@@ -50,7 +50,27 @@ private:
 
         return y;
     }
+    AVLNode* rebalance(AVLNode* node) {
+        int balance = balanceFactor(node);
 
+        if (balance > 1 && balanceFactor(node->left) >= 0)
+            return rightRotate(node);
+
+        if (balance > 1 && balanceFactor(node->left) < 0) {
+            node->left = leftRotate(node->left);
+            return rightRotate(node);
+        }
+
+        if (balance < -1 && balanceFactor(node->right) <= 0)
+            return leftRotate(node);
+
+        if (balance < -1 && balanceFactor(node->right) > 0) {
+            node->right = rightRotate(node->right);
+            return leftRotate(node);
+        }
+
+        return node;
+    }
     AVLNode* insert(AVLNode* node, int key) {
         if (node == nullptr)
             return new AVLNode(key);
@@ -63,25 +83,8 @@ private:
             return node;
 
         node->height = 1 + max(height(node->left), height(node->right));
-        int balance = balanceFactor(node);
 
-        if (balance > 1 && key < node->left->key)
-            return rightRotate(node);
-
-        if (balance < -1 && key > node->right->key)
-            return leftRotate(node);
-
-        if (balance > 1 && key > node->left->key) {
-            node->left = leftRotate(node->left);
-            return rightRotate(node);
-        }
-
-        if (balance < -1 && key < node->right->key) {
-            node->right = rightRotate(node->right);
-            return leftRotate(node);
-        }
-
-        return node;
+        return rebalance(node);
     }
 
     AVLNode* minValueNode(AVLNode* node) {
@@ -119,25 +122,8 @@ private:
             return root;
 
         root->height = 1 + max(height(root->left), height(root->right));
-        int balance = balanceFactor(root);
 
-        if (balance > 1 && balanceFactor(root->left) >= 0)
-            return rightRotate(root);
-
-        if (balance > 1 && balanceFactor(root->left) < 0) {
-            root->left = leftRotate(root->left);
-            return rightRotate(root);
-        }
-
-        if (balance < -1 && balanceFactor(root->right) <= 0)
-            return leftRotate(root);
-
-        if (balance < -1 && balanceFactor(root->right) > 0) {
-            root->right = rightRotate(root->right);
-            return leftRotate(root);
-        }
-
-        return root;
+        return rebalance(root);
     }
 
     void inorder(AVLNode* root) {
