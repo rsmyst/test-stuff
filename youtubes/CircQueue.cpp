@@ -2,87 +2,84 @@
 #include <climits>
 using namespace std;
 
-struct Node {
+class Node {
+public:
     int data;
-    struct Node* link;
+    Node* link;
 };
 
-struct Queue {
-    struct Node *front, *rear;
+class Queue {
+public:
+    Node *front, *rear;
     int size;
+
+    Queue() {
+        front = rear = nullptr;
+        size = 0;
+    }
+
+    void enQueue(int value) {
+        Node* temp = new Node;
+        temp->data = value;
+        if (front == nullptr)
+            front = temp;
+        else
+            rear->link = temp;
+
+        rear = temp;
+        rear->link = front;
+        size += 1;
+    }
+
+    int deQueue() {
+        if (front == nullptr) {
+            cout << "Queue is empty";
+            return INT_MIN;
+        }
+
+        int value;
+        if (front == rear) {
+            value = front->data;
+            delete front;
+            front = nullptr;
+            rear = nullptr;
+        } else {
+            Node* temp = front;
+            value = temp->data;
+            front = front->link;
+            rear->link = front;
+            delete temp;
+        }
+        size -= 1;
+        return value;
+    }
+
+    void display() {
+        if (front == nullptr) {
+            cout << "Queue is empty" << endl;
+            return;
+        }
+        Node* temp = front;
+        cout << "Queue elements are: ";
+        do {
+            cout << temp->data << " ";
+            temp = temp->link;
+        } while (temp != front);
+        cout << endl;
+    }
 };
-
-void enQueue(Queue* q, int value) {
-    struct Node* temp = new Node;
-    temp->data = value;
-    if (q->front == NULL)
-        q->front = temp;
-    else
-        q->rear->link = temp;
-
-    q->rear = temp;
-    q->rear->link = q->front;
-    q->size +=1;
-}
-
-int deQueue(Queue* q) {
-    if (q->front == NULL) {
-        cout << "Queue is empty";
-        return INT_MIN;
-    }
-
-    int value;
-    if (q->front == q->rear) {
-        value = q->front->data;
-        free(q->front);
-        q->front = NULL;
-        q->rear = NULL;
-    } else {
-        struct Node* temp = q->front;
-        value = temp->data;
-        q->front = q->front->link;
-        q->rear->link = q->front;
-        free(temp);
-    }
-    q->size-=1;
-    return value;
-}
-
-void display(struct Queue* q) {
-    struct Node* temp = q->front;
-    cout << endl << "Elements in Circular Queue are: ";
-    while (temp->link != q->front) {
-        cout << temp->data << " ";
-        temp = temp->link;
-    }
-    cout << temp->data;
-}
-
-int isEmpty(Queue* q){
-    if (q->size==0){
-        return 1;
-    }
-    return 0;
-}
 
 int main() {
-    Queue* q = new Queue;
-    q->front = q->rear = NULL;
-
-    enQueue(q, 14);
-    enQueue(q, 22);
-    enQueue(q, 6);
-
-    display(q);
-
-    cout << endl << "Deleted value = " << deQueue(q);
-    cout << endl << "Deleted value = " << deQueue(q);
-
-    display(q);
-
-    enQueue(q, 9);
-    enQueue(q, 20);
-    display(q);
-
+    Queue q;
+    q.enQueue(10);
+    q.enQueue(20);
+    q.deQueue();
+    q.deQueue();
+    q.enQueue(30);
+    q.enQueue(40);
+    q.enQueue(50);
+    q.display();
+    cout << "Dequeued value: " << q.deQueue() << endl;
+    q.display();
     return 0;
 }
